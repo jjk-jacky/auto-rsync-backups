@@ -1,0 +1,267 @@
+#!/bin/bash
+
+# Copyright (C) 2011-12 Olivier Brunel
+# https://bitbucket.org/jjacky/backups
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+version="1.0.1"
+
+function log()
+{
+    echo "["$(date +%H:%M:%S)"] $@"
+}
+
+function vlog()
+{
+    if [ ! -z $verbose ] && [ "$verbose" = 1 ]; then
+        log "$@"
+    fi
+}
+
+function error()
+{
+    log "ERROR: $@" 1>&2
+    exit 1
+}
+
+# bash automatically trims when assigning to variables and passing arguments. Therefore this function will return
+# whatever argument it was sent, automatically trimmed
+function trim()
+{
+    echo "$@"
+}
+
+# ensure ends with a /
+function ensure_slashed()
+{
+    v="$@"
+    if [ "${v:${#v}-1}" != "/" ]; then
+        v="$v/"
+    fi
+    echo "$v"
+    unset v
+}
+
+# $1        name of the option being parsed (from command line)
+# $2        value (if any; can be another option is no value was specified)
+# returns   the value, trimmed. but aborts (calling error) if no value specified
+function parse_opt()
+{
+    name=$1
+    value=$(trim "$2")
+    if [ -z "$value" ] || [ "${value:0:1}" = "-" ]; then
+        error "required $name not specified"
+    fi
+    echo $value
+    unset name
+    unset value
+}
+
+# set default values for those not yet set
+function set_defaults()
+{
+    # args
+    if [ -z "$args" ]; then
+        args="--archive --acls --xattrs --human-readable -h --stats"
+        vlog "default: rsync args: $args"
+    fi
+    # date-format
+    if [ -z "$date_format" ]; then
+        date_format="%Y-%m-%d"
+        vlog "default: date format: $date_format"
+    fi
+    # monthly
+    if [ -z "$monthly" ]; then
+        monthly=1
+        vlog "default: monthly: $monthly"
+    fi
+    # weekly
+    if [ -z "$weekly" ]; then
+        weekly=1
+        vlog "default: weekly: $weekly"
+    fi
+    # daily
+    if [ -z "$daily" ]; then
+        daily=1
+        vlog "default: daily: $daily"
+    fi
+}
+
+# this will load the config from $conf_file; aborts/fails if variable not set or file doesn't exist
+# it loads values from the file, ignoring them if already set (e.g. from command line)
+# it trims values, also ensures all paths are slashed
+#
+# $1        1 when called from restore.sh
+#
+# in backup mode (i.e. no param, or not "1") it will:
+# - set default values if needed (set_defaults)
+# - if specified, make sure file in exclude-from exists, else aborts/fails
+#
+# in restore mode (i.e. param == "1") it will:
+# - only load verbose and args; everything else is ignored
+# - set default values if needed (set_defaults)
+function load_config()
+{
+    if [ ! -f "$conf_file" ]; then
+        error "configuration file not found: $conf_file"
+    fi
+
+    is_from_restore=0
+    if [ ! -z $1 ] && [ $1 -eq 1 ]; then
+        is_from_restore=1
+    fi
+
+    vlog "read configuration file: $conf_file"
+    while read line
+    do
+        line=$(trim "$line")
+        # ignore empty lines & comments
+        if [ "$line" != "" ] && [ "${line:0:1}" != "#" ] && [ "${line:0:1}" != ";" ]
+        then
+            line=$(trim "$line")
+            # extract trimmed name & value
+            name=$(trim ${line%%=*})
+            value=$(trim ${line#*=})
+
+            case "$name" in
+                "verbose")
+                    if ( [ -z "$verbose" ] || [ "$verbose" != 1 ] ) && ( [ "$value" = 1 ] || [ "$value" = "verbose" ] ); then
+                        verbose=1
+                        log "config: verbose mode enabled"
+                    fi
+                    ;;
+
+                "exclude-from")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$exclude_from" ]; then
+                            exclude_from=$value
+                            vlog "config: load excludes from $exclude_from"
+                        else
+                            vlog "config: exclude-from ($value) ignored"
+                        fi
+                    fi
+                    ;;
+
+                "source")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$source" ]; then
+                            source=$value
+                            vlog "config: source: $source"
+                        else
+                            vlog "config: source ($value) ignored"
+                        fi
+                    fi
+                    ;;
+
+                "dest-root")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$dest_root" ]; then
+                            dest_root=$value
+                            vlog "config: destination root: $dest_root"
+                        else
+                            vlog "config: destination root ($value) ignored"
+                        fi
+                    fi
+                    ;;
+
+                "date-format")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$date_format" ]; then
+                            date_format=$value
+                            vlog "config: date format set to $date_format"
+                        else
+                            vlog "config: date format ($value) ignored"
+                        fi
+                    fi
+                    ;;
+
+                "link-dest")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$link_dest" ]; then
+                            link_dest=$value
+                            vlog "config: link dest: $link_dest"
+                        else
+                            vlog "config: link dest ($value) ignored"
+                        fi
+                    fi
+                    ;;
+
+                "args")
+                    if [ -z "$args" ]; then
+                        args=$value
+                        vlog "config: rsync args: $args"
+                    else
+                        vlog "config: rsync args ($value) ignored"
+                    fi
+                    ;;
+
+                "monthly")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$monthly" ]; then
+                            monthly=$value
+                            vlog "config: monthly: $monthly"
+                        else
+                            vlog "config: monthly ($value) ignored)"
+                        fi
+                    fi
+                    ;;
+
+                "weekly")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$weekly" ]; then
+                            weekly=$value
+                            vlog "config: weekly: $weekly"
+                        else
+                            vlog "config: weekly ($value) ignored)"
+                        fi
+                    fi
+                    ;;
+
+                "daily")
+                    if [ $is_from_restore -eq 0 ]; then
+                        if [ -z "$daily" ]; then
+                            daily=$value
+                            vlog "config: daily: $daily"
+                        else
+                            vlog "config: daily ($value) ignored)"
+                        fi
+                    fi
+                    ;;
+
+                *)
+                    log "WARNING: unknown configuration setting: $name"
+                    ;;
+            esac
+        fi
+    done < "$conf_file"
+
+    # excludes
+    if [ ! -z "$exclude_from" ]; then
+        if [ -f "$exclude_from" ]; then
+            vlog "- exclude from: $exclude_from"
+        else
+            error "exclude-from file not found: $exclude_from"
+        fi
+    fi
+
+    # load defaults if needed
+    set_defaults
+
+    # args
+    if [ ! -z $verbose ] && [ "$verbose" = 1 ]; then
+        args="--verbose $args"
+    fi
+}
+

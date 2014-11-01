@@ -1,0 +1,12 @@
+- /backups/
+- /boot/
+- /dev/
+- /lost+found/
+- /media/
+- /mnt/
+- /proc/
+- /run/
+- /sys/
+- /var/lock/
+- /var/run/
+- /tmp/
