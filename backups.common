@@ -16,11 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-version="1.0.1"
+version="1.0.2"
+
+log_init=0
+log_buffer=""
+
+function flush_log()
+{
+    [[ $log_init -eq 1 ]] && return
+    if [ ! -z $log_file ]; then
+        echo $log_buffer > $log_file
+    else
+        echo $log_buffer
+    fi
+    log_init=1
+}
 
 function log()
 {
-    echo "["$(date +%H:%M:%S)"] $@"
+    if [ $log_init -eq 1 ]; then
+        if [ ! -z $log_file ]; then
+            echo "["$(date +%H:%M:%S)"] $@" >> $log_file
+        else
+            echo "["$(date +%H:%M:%S)"] $@"
+        fi
+    else
+        log_buffer="$log_buffer["$(date +%H:%M:%S)"] $@"$'\n'
+    fi
 }
 
 function vlog()
@@ -140,6 +162,15 @@ function load_config()
                     if ( [ -z "$verbose" ] || [ "$verbose" != 1 ] ) && ( [ "$value" = 1 ] || [ "$value" = "verbose" ] ); then
                         verbose=1
                         log "config: verbose mode enabled"
+                    fi
+                    ;;
+
+                "log-file")
+                    if [ -z "$log_file" ]; then
+                        log_file=$value
+                        vlog "config: log file set to $log_file"
+                    else
+                        vlog "config: log-file ($value) ignored"
                     fi
                     ;;
 

@@ -24,6 +24,7 @@
 # --verbose         if verbose mode is enabled
 # --exclude-from    if option was specified (file must exists, else error)
 # --link-dest       if option was specified unless does not exist (yet) or is a symlink
+# --log-file        if option was specified
 #
 # if no date format is specified, default value is used.
 #
@@ -68,6 +69,7 @@ if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     echo "-V, --version             show version information and exit"
     echo ""
     echo "-v, --verbose             enable verbose mode"
+    echo "-l, --log-file FILE       set FILE as log file (instead of stdout)"
     echo "-c, --config FILE         set FILE as configuration file"
     echo "    --exclude-from FILE   set FILE as excludes file (rsync's --exclude-from)"
     echo "-s, --source PATH         set PATH as source of the backup"
@@ -103,6 +105,11 @@ while [ ! -z "$1" ]; do
         "-v"|"--verbose")
             verbose=1
             log "command-line: verbose mode enabled"
+            ;;
+
+        "-l"|"--log-file")
+            log_file=$(parse_opt "log file" "$1")
+            vlog "command-line: log file: $log_file"
             ;;
 
         "-c"|"--config")
@@ -189,6 +196,8 @@ else
     set_defaults
 fi
 
+flush_log
+
 # source must exists
 if [ -z "$source" ]; then
     error "source missing"
@@ -233,6 +242,11 @@ if [ ! -z "$link_dest" ]; then
     fi
 else
     vlog "no link-dest"
+fi
+
+# add log file if any
+if [ -f "$log_file" ]; then
+    args="--log-file=$log_file $args"
 fi
 
 # add excludes if any
