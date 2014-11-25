@@ -40,15 +40,14 @@
 # How it works:
 # - rsync will copy source into dest (using link-dest if any)
 # - symlink (link-dest) is created/updated to point to newly created backup
-# - yesterday's backup is removed, unless:
-#   - we are the 2nd day of the month, then last month's is removed instead
-#   - we are Tuesday, then:
-#       - if we are also the 2nd of the month, nothing is removed
-#       - if we are also the 9th of the month, remove backup from 2 weeks ago
-#       - else, remove backup from last week
+# - the old backup is removed. That is the backup from $daily days, unless it's
+#   a Monday and we have weekly backups, then we go $weekly weeks back and
+#   remove that one, unless it's a 1st of the Month and we havbe monthly
+#   backups, then we go $monthly months back.
 #
 # likely to be run as cronjob, e.g.:
 # 0 3 * * * backups.sh -c /etc/backups.conf > /var/log/backups.last 2>> /var/log/backups.err
+# or, via systemd, using a backups.service from a backups.timer
 
 # loads some common functions
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/backups.common"
@@ -85,8 +84,8 @@ if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     echo "                          pointing to last backup (full path sent to rsync's --link-dest)"
     echo "    --args ARGS           set ARGS as arguments for rsync (do NOT include --verbose, --exclude-from"
     echo "                          or --link-dest; they are auto-added if needed)"
-    echo "    --monthly 0|1         whether to keep monthly backup (1) or not (0)"
-    echo "    --weekly 0|1          whether to keep weekly backup (1) or not (0)"
+    echo "    --monthly NUM         set to keep NUM monthly backups"
+    echo "    --weekly NUM          set to keep NUM weekly backups"
     echo "    --daily NUM           set to keep NUM daily backups"
     exit 0
 elif [[ "$@" = "-V" ]] || [[ "$@" = "--version" ]]; then
@@ -213,6 +212,12 @@ else
     vlog "- source: $source"
 fi
 
+# make sure we should run
+if [ $daily -eq 0 ] && ( [ $weekly -eq 0 ] || [ $(date +%w) -ne 1 ] ) \
+    && ( [ $monthly -eq 0 ] || [ $(date +%_d) -ne 1 ] ) ; then
+    error "nothing to do"
+fi
+
 # create full destination name
 if [ -z "$dest_root" ]; then
     error "destination root missing"
@@ -264,10 +269,8 @@ if [ ! -z "$link_dest" ] && [ $has_link_dest = 1 ]; then
     args="$args --link-dest=$link_dest"
 fi
 
-# daily must be at least 1 (to keep the backup just made!)
-if [ $daily -lt 1 ]; then
-    error "invalid value for daily: $daily"
-fi
+# date of backup (i.e. today, used in deletion/rotation below)
+d="$(date +%Y-%m-%d)"
 
 log "-> rsync $args $source $dest"
 rsync $args "$source" "$dest"
@@ -291,65 +294,33 @@ if [ ! -z "$link_dest" ]; then
 fi
 
 # now begins the whole rotation thinggy
+# i.e. let's get the date of the backup to remove
 
-# how many days to the previous backup (to be removed) -- e.g:
-# 1 = remove backup from yesterday
-# 2 = remove backup from the day before
-nb_prev=$daily
+if [ $daily -gt 0 ]; then
+    d=$(date --date="$d -$daily days" +%Y-%m-%d)
+    vlog "set previous backup to $d"
+fi
 
-# by default, the previous backup is a goner
-del_prev=1
-
-# current day
-day="$(date +%d)"
-
-if [ $monthly -eq 1 ]; then
-    # day when previous backup is the 1st of the month
-    new_month=$((1 + $nb_prev))
-    # new month
-    if [ $day -eq $new_month ]; then
-        # previous backup is the 1st of this month, which means:
-        # - it will NOT be removed
-        # - we delete backup from last month
-        del_prev=0
-        vlog "new month: shall remove backup from last month, if exists"
-        delete_backup $(date --date="-1 month -$nb_prev day" "+$date_format")
+if [ $weekly -gt 0 ]; then
+    w=$(date --date="$d" +%w)
+    if [ $w -eq 1 ]; then
+        # it's a Monday, go back
+        d=$(date --date="$d -$weekly weeks" +%Y-%m-%d)
+        vlog "Monday: set previous backup to $d"
     fi
 fi
 
-if [ $weekly -eq 1 ]; then
-    # day when previous backup is the start of the week (i.e. a Monday)
-    new_week=$(($nb_prev % 7 + 1))
-    # new week
-    if [ $(date +%w) -eq $new_week ]; then
-        # previous backup is a Monday, which means:
-        # - it will NOT be removed
-        # - if it's also the 1st of the month, we do nothing (i.e. do NOT delete last week)
-        # - if it's also the 8th of the month, we need to delete backup from 2 weeks ago
-        # - else, we delete backup from last week
-        del_prev=0
-        del_week=1
-        if [ $monthly -eq 1 ]; then
-            if [ $day -eq $new_month ]; then
-                del_week=0
-                vlog "new week: shall remove nothing (previous backup is also this month's backup)"
-            elif [ $day -eq $((8 + $nb_prev)) ]; then
-                del_week=0
-                vlog "new week: shall remove backup from 2 weeks ago (last week's is this month's backup), if exists"
-                delete_backup $(date --date="-2 weeks -$nb_prev day" "+$date_format")
-            fi
-        fi
-        if [ $del_week -eq 1 ]; then
-            vlog "new week: shall remove last week's backup, if exists"
-            delete_backup $(date --date="-1 week -$nb_prev day" "+$date_format")
-        fi
+if [ $monthly -gt 0 ]; then
+    m=$(date --date="$d" +%_d)
+    if [ $m -eq 1 ]; then
+        # it's a 1st of the month, go back
+        d=$(date --date="$d -$monthly months" +%Y-%m-%d)
+        vlog "1st: set previous backup to $d"
     fi
 fi
 
-if [ $del_prev -eq 1 ]; then
-    vlog "remove previous backup if exists"
-    delete_backup $(date --date="-$nb_prev day" "+$date_format")
-fi
+vlog "remove previous backup if exists"
+delete_backup $(date --date="$d" "+$date_format")
 
 log "done"
 exit 0
