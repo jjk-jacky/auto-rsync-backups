@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # loads some common functions
-source $(dirname $(readlink -f "${BASH_SOURCE[0]}"))"/backups.common"
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/backups.common"
 
 if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     me=$(basename $0)

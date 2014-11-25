@@ -47,7 +47,7 @@
 # 0 3 * * * backups.sh -c /etc/backups.conf > /var/log/backups.last 2>> /var/log/backups.err
 
 # loads some common functions
-source $(dirname $(readlink -f "${BASH_SOURCE[0]}"))"/backups.common"
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/backups.common"
 
 # $1		name of the folder to delete from dest_root, if exists (name calculated from date format...)
 function delete_backup()
