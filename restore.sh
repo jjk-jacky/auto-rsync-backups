@@ -88,6 +88,8 @@ else
     set_defaults
 fi
 
+flush_log
+
 if [ -z "$1" ]; then
     error "source missing"
 fi

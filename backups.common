@@ -19,16 +19,19 @@
 version="1.0.2"
 
 log_init=0
-log_buffer=""
+declare -a log_buffer
 
 function flush_log()
 {
     [[ $log_init -eq 1 ]] && return
-    if [ ! -z $log_file ]; then
-        echo $log_buffer > $log_file
-    else
-        echo $log_buffer
-    fi
+    [[ -f $log_file ]] && rm "$log_file"
+    for line in "${log_buffer[@]}"; do
+        if [ ! -z $log_file ]; then
+            echo $line >> $log_file
+        else
+            echo $line
+        fi
+    done
     log_init=1
 }
 
@@ -36,12 +39,13 @@ function log()
 {
     if [ $log_init -eq 1 ]; then
         if [ ! -z $log_file ]; then
-            echo "["$(date +%H:%M:%S)"] $@" >> $log_file
+            echo "[$(date +%H:%M:%S)] $@" >> $log_file
         else
-            echo "["$(date +%H:%M:%S)"] $@"
+            echo "[$(date +%H:%M:%S)] $@"
         fi
     else
-        log_buffer="$log_buffer["$(date +%H:%M:%S)"] $@"$'\n'
+        line="[$(date +%H:%M:%S)] $@"
+        log_buffer+=("$line")
     fi
 }
 
