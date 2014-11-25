@@ -80,11 +80,13 @@ while [ ! -z "$1" ]; do
     shift
 done
 
-# loads config from $conf_file (1 == only care for verbose/exclude-from/args; ignore everything else)
+# loads config from $conf_file (1 == only care for verbose/exclude-from/args;
+# ignore everything else)
 if [ ! -z "$conf_file" ]; then
     load_config 1
 else
-    # if we don't load config (no file specified) then just set default values (if needed)
+    # if we don't load config (no file specified) then just set default values
+    # (if needed)
     set_defaults
 fi
 

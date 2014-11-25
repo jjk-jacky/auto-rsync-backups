@@ -19,8 +19,10 @@
 
 # little script to handle (auto) backup using rsync
 #
-# the config use can be set in a config file, or on command line. command-line takes precedence over config file.
-# if none set, default rsync args are used. either way, some are auto-added based on other options:
+# the config use can be set in a config file, or on command line. command-line
+# takes precedence over config file.
+# if none set, default rsync args are used. either way, some are auto-added
+# based on other options:
 # --verbose         if verbose mode is enabled
 # --exclude-from    if option was specified (file must exists, else error)
 # --link-dest       if option was specified unless does not exist (yet) or is a symlink
@@ -29,9 +31,11 @@
 # if no date format is specified, default value is used.
 #
 # * source must be the full path
-# * destination is made from dest_root (parent folder) and dest_name (folder name), the later being specified on
-# command line, or generated using the given date format (cmd-line/cfg-file)
-# * link-dest is the symlink's name placed in dest_root, and pointing to latest backup
+# * destination is made from dest_root (parent folder) and dest_name (folder
+#   name), the later being specified on command line, or generated using the
+#   given date format (cmd-line/cfg-file)
+# * link-dest is the symlink's name placed in dest_root, and pointing to latest
+#   backup
 #
 # How it works:
 # - rsync will copy source into dest (using link-dest if any)
@@ -49,7 +53,8 @@
 # loads some common functions
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/backups.common"
 
-# $1		name of the folder to delete from dest_root, if exists (name calculated from date format...)
+# $1        name of the folder to delete from dest_root, if exists (name
+#           calculated from date format...)
 function delete_backup()
 {
     name="$dest_root$1"
