@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Copyright (C) 2011-12 Olivier Brunel
-# https://bitbucket.org/jjacky/backups
+# Copyright (C) 2011-2014 Olivier Brunel
+# https://github.com/jjk-jacky/backups
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     exit 0
 elif [[ "$@" = "-V" ]] || [[ "$@" = "--version" ]]; then
     echo "restore -- backups v$version - little script to handle (auto) backup using rsync"
-    echo "Copyright (C) 2011-12 Olivier Brunel; https://bitbucket.org/jjacky/backups"
+    echo "Copyright (C) 2011-2014 Olivier Brunel; https://github.com/jjk-jacky/backups"
     echo "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>"
     echo "This is free software: you are welcome to change and redistribute it under certain conditions."
     echo "There is NO WARRANTY; see license for more."
