@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright (C) 2011-2014 Olivier Brunel
-# https://github.com/jjk-jacky/backups
+# https://github.com/jjk-jacky/auto-rsync-backups
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@
 # or, via systemd, using a backups.service from a backups.timer
 
 # loads some common functions
-source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/backups.common"
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/auto-rsync-backups.common"
 
 # $1        name of the folder to delete from dest_root, if exists (name
 #           calculated from date format...)
@@ -65,7 +65,7 @@ function delete_backup()
 
 if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     me=$(basename $0)
-    echo "backups v$version - little script to handle (auto) backup using rsync"
+    echo "auto-rsync-backups v$version - little script to handle (auto) backup using rsync"
     echo ""
     echo "Syntax: $me [options]"
     echo ""
@@ -89,8 +89,8 @@ if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     echo "    --daily NUM           set to keep NUM daily backups"
     exit 0
 elif [[ "$@" = "-V" ]] || [[ "$@" = "--version" ]]; then
-    echo "backups v$version - little script to handle (auto) backup using rsync"
-    echo "Copyright (C) 2011-2014 Olivier Brunel; https://github.com/jjk-jacky/backups"
+    echo "auto-rsync-backups v$version - little script to handle (auto) backup using rsync"
+    echo "Copyright (C) 2011-2014 Olivier Brunel; https://github.com/jjk-jacky/auto-rsync-backups"
     echo "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>"
     echo "This is free software: you are welcome to change and redistribute it under certain conditions."
     echo "There is NO WARRANTY; see license for more."
@@ -99,7 +99,7 @@ fi
 
 # the work begins...
 
-log "backups v$version"
+log "auto-rsync-backups v$version"
 log "- date: $(date +%Y-%m-%d)"
 log "- command-line: $@"
 

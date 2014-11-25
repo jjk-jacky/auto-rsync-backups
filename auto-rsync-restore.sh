@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright (C) 2011-2014 Olivier Brunel
-# https://github.com/jjk-jacky/backups
+# https://github.com/jjk-jacky/auto-rsync-backups
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,11 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # loads some common functions
-source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/backups.common"
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/auto-rsync-backups.common"
 
 if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     me=$(basename $0)
-    echo "restore -- backups v$version - little script to handle (auto) backup using rsync"
+    echo "auto-rsync-restore v$version - little script to handle (auto) backup using rsync"
     echo ""
     echo "Syntax: $me [options] SOURCE DEST"
     echo ""
@@ -36,8 +36,8 @@ if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     echo "                          or --link-dest; they are auto-added if needed)"
     exit 0
 elif [[ "$@" = "-V" ]] || [[ "$@" = "--version" ]]; then
-    echo "restore -- backups v$version - little script to handle (auto) backup using rsync"
-    echo "Copyright (C) 2011-2014 Olivier Brunel; https://github.com/jjk-jacky/backups"
+    echo "auto-rsync-backups v$version - little script to handle (auto) backup using rsync"
+    echo "Copyright (C) 2011-2014 Olivier Brunel; https://github.com/jjk-jacky/auto-rsync-backups"
     echo "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>"
     echo "This is free software: you are welcome to change and redistribute it under certain conditions."
     echo "There is NO WARRANTY; see license for more."
@@ -46,7 +46,7 @@ fi
 
 # the work begins...
 
-log "restore -- backups v$version"
+log "auto-rsync-restore v$version"
 log "- date: $(date +%Y-%m-%d)"
 log "- command-line: $@"
 
