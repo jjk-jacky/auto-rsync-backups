@@ -99,6 +99,8 @@ fi
 
 # the work begins...
 
+trap 'on_exit' EXIT
+
 log "auto-rsync-backups v$version"
 log "- date: $(date +%Y-%m-%d)"
 log "- command-line: $@"
@@ -324,4 +326,3 @@ delete_backup $(date --date="$d" "+$date_format")
 
 log "done"
 exit 0
-
