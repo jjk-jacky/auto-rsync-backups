@@ -67,7 +67,7 @@ while [ ! -z "$1" ]; do
         "--args")
             shift
             args=$(parse_opt "rsync args" "$1")
-            vlog "command-line: rsync args: $link_dest"
+            vlog "command-line: rsync args: $args"
             ;;
 
         *)
