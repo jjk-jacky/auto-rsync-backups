@@ -34,6 +34,7 @@ if [[ "$@" = "-h" ]] || [[ "$@" = "--help" ]]; then
     echo "-c, --config FILE         set FILE as configuration file"
     echo "    --args ARGS           set ARGS as arguments for rsync (do NOT include --verbose"
     echo "                          or --link-dest; they are auto-added if needed)"
+    echo "-i, --ids                 add --numeric-ids to rsync arguments"
     exit 0
 elif [[ "$@" = "-V" ]] || [[ "$@" = "--version" ]]; then
     echo "auto-rsync-backups v$version - little script to handle (auto) backup using rsync"
@@ -68,6 +69,12 @@ while [ ! -z "$1" ]; do
             shift
             args=$(parse_opt "rsync args" "$1")
             vlog "command-line: rsync args: $args"
+            ;;
+
+        "-i"|"--ids")
+            shift
+            ids=1
+            vlog "command-line: rsync args: add --numeric-ids"
             ;;
 
         *)
@@ -106,6 +113,9 @@ fi
 dest=$(ensure_slashed "$2")
 if [ ! -d "$dest" ]; then
     error "destination not found: $dest"
+fi
+if [ ! -z $ids ] && [ "$ids" = 1 ]; then
+    args="--numeric-ids $args"
 fi
 
 log "-> rsync $args $source $dest"
